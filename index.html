@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣機場資訊系統</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>台灣機場資訊系統</h1>
+        </header>
+
+        <section class="airport-selection">
+            <h2>選擇機場</h2>
+            <div class="airport-buttons">
+                <button class="airport-btn" data-iata="TPE">桃園國際機場 (TPE)</button>
+                <button class="airport-btn" data-iata="TSA">台北松山機場 (TSA)</button>
+                <button class="airport-btn" data-iata="KHH">高雄小港機場 (KHH)</button>
+                <button class="airport-btn" data-iata="RMQ">台中國際機場 (RMQ)</button>
+            </div>
+        </section>
+
+        <section class="function-selection" style="display: none;">
+            <h2>功能選單</h2>
+            <div class="function-buttons">
+                <button class="function-btn" data-function="flight-info">航班資訊查詢</button>
+                <button class="function-btn" data-function="weather">即時天氣資訊</button>
+                <button class="function-btn" data-function="schedule">定期航班查詢</button>
+                <button class="function-btn" data-function="airlines">航空公司查詢</button>
+            </div>
+        </section>
+
+        <section class="display-area">
+            <div id="flight-info-display" class="info-display" style="display: none;">
+                <h3>航班資訊</h3>
+                <div class="flight-table-container">
+                    <table id="flight-table">
+                        <thead>
+                            <tr>
+                                <th>航班編號</th>
+                                <th>出發地</th>
+                                <th>目的地</th>
+                                <th>預計時間</th>
+                                <th>航廈</th>
+                                <th>狀態</th>
+                            </tr>
+                        </thead>
+                        <tbody id="flight-data">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="weather-display" class="info-display" style="display: none;">
+                <h3>即時天氣資訊</h3>
+                <div class="weather-card">
+                    <div id="weather-data"></div>
+                </div>
+            </div>
+
+            <div id="schedule-display" class="info-display" style="display: none;">
+                <h3>定期航班資訊</h3>
+                <div id="schedule-data"></div>
+            </div>
+
+            <div id="airlines-display" class="info-display" style="display: none;">
+                <h3>航空公司資訊</h3>
+                <div id="airlines-data"></div>
+            </div>
+        </section>
+    </div>
+    <script src="main.js"></script>
+</body>
+</html>

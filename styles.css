@@ -1,0 +1,135 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: '微軟正黑體', Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f0f2f5;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    color: #1a237e;
+    font-size: 2.5rem;
+}
+
+h2 {
+    color: #283593;
+    margin-bottom: 20px;
+}
+
+.airport-selection, .function-selection {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.airport-buttons, .function-buttons {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.airport-btn, .function-btn {
+    padding: 15px 20px;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    color: #1a237e;
+    border: 2px solid #1a237e;
+}
+
+.airport-btn:hover, .function-btn:hover {
+    background-color: #1a237e;
+    color: #fff;
+    transform: translateY(-2px);
+}
+
+.airport-btn.active {
+    background-color: #1a237e;
+    color: #fff;
+}
+
+.info-display {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 航班資訊表格樣式 */
+.flight-table-container {
+    overflow-x: auto;
+}
+
+#flight-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+#flight-table th, #flight-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#flight-table th {
+    background-color: #1a237e;
+    color: #fff;
+}
+
+#flight-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+/* 天氣資訊卡片樣式 */
+.weather-card {
+    background: linear-gradient(135deg, #1a237e, #3949ab);
+    color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 15px;
+}
+
+/* 響應式設計 */
+@media screen and (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2rem;
+    }
+
+    .airport-buttons, .function-buttons {
+        grid-template-columns: 1fr;
+    }
+
+    #flight-table {
+        font-size: 0.9rem;
+    }
+}
