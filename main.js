@@ -68,29 +68,35 @@ async function fetchTDXData(endpoint) {
     try {
         const response = await fetch(`http://localhost:3000${endpoint}`);
         const data = await response.json();
-        if (data.error) {
-            throw new Error(data.error);
+        if (data.status === 'error') {
+            throw new Error(data.error + (data.details ? `: ${data.details}` : ''));
         }
-        return data;
+        return data.data; // 返回實際數據
     } catch (error) {
         console.error('API 請求錯誤:', error);
-        return null;
+        throw error; // 向上傳遞錯誤
     }
 }
 
 // 航班資訊載入
 async function loadFlightInfo(airportCode) {
     const flightData = document.getElementById('flight-data');
-    flightData.innerHTML = '<tr><td colspan="6">載入中...</td></tr>';
+    flightData.innerHTML = '<tr><td colspan="6" class="loading">載入中...</td></tr>';
 
     try {
-        // TODO: 實作 TDX API 航班資訊請求
         const flights = await fetchTDXData(`/api/flights/${airportCode}`);
         if (flights) {
             updateFlightTable(flights);
         }
     } catch (error) {
-        flightData.innerHTML = '<tr><td colspan="6">無法載入航班資訊</td></tr>';
+        console.error('載入航班資訊失敗:', error);
+        flightData.innerHTML = `<tr><td colspan="6" class="error">
+            <div class="error-message">
+                <p>無法載入航班資訊</p>
+                <p class="error-details">${error.message}</p>
+                <button onclick="loadFlightInfo('${airportCode}')" class="retry-btn">重試</button>
+            </div>
+        </td></tr>`;
     }
 }
 
@@ -104,46 +110,65 @@ function updateFlightTable(flights) {
 
     flightData.innerHTML = flights.map(flight => `
         <tr>
-            <td>${flight.flightNumber}</td>
-            <td>${flight.departure}</td>
-            <td>${flight.destination}</td>
-            <td>${flight.scheduledTime}</td>
-            <td>${flight.terminal}</td>
-            <td>${flight.status}</td>
+            <td>${flight.FlightNumber || '--'}</td>
+            <td>${flight.DepartureAirportID || '--'}</td>
+            <td>${flight.ArrivalAirportID || '--'}</td>
+            <td>${formatDateTime(flight.ScheduleDepartureTime) || '--'}</td>
+            <td>${flight.Terminal || '--'} ${flight.Gate ? `Gate ${flight.Gate}` : ''}</td>
+            <td>${flight.DepartureRemark || '--'}</td>
         </tr>
     `).join('');
+}
+
+// 格式化日期時間
+function formatDateTime(dateTimeStr) {
+    if (!dateTimeStr) return '--';
+    const dt = new Date(dateTimeStr);
+    return dt.toLocaleString('zh-TW', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+    });
 }
 
 // 天氣資訊載入
 async function loadWeatherInfo(airportCode) {
     const weatherData = document.getElementById('weather-data');
-    weatherData.innerHTML = '載入中...';
+    weatherData.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
-        // TODO: 實作 TDX API 天氣資訊請求
         const weather = await fetchTDXData(`/api/weather/${airportCode}`);
         if (weather) {
             updateWeatherCard(weather);
         }
     } catch (error) {
-        weatherData.innerHTML = '無法載入天氣資訊';
+        console.error('載入天氣資訊失敗:', error);
+        weatherData.innerHTML = `
+            <div class="error-message">
+                <p>無法載入天氣資訊</p>
+                <p class="error-details">${error.message}</p>
+                <button onclick="loadWeatherInfo('${airportCode}')" class="retry-btn">重試</button>
+            </div>
+        `;
     }
 }
 
 // 更新天氣資訊卡片
 function updateWeatherCard(weather) {
     const weatherData = document.getElementById('weather-data');
-    if (!weather) {
+    if (!weather || weather.length === 0) {
         weatherData.innerHTML = '無法取得天氣資訊';
         return;
     }
 
+    const latestWeather = weather[0]; // 取得最新的天氣資訊
     weatherData.innerHTML = `
-        <h4>${weather.location}</h4>
+        <h4>${latestWeather.StationID} 機場天氣資訊</h4>
         <div class="weather-details">
-            <p>溫度: ${weather.temperature}°C</p>
-            <p>濕度: ${weather.humidity}%</p>
-            <p>天氣狀況: ${weather.description}</p>
+            <p>METAR 報告: ${latestWeather.METAR || '--'}</p>
+            <p>觀測時間: ${formatDateTime(latestWeather.ObservationTime) || '--'}</p>
         </div>
     `;
 }
@@ -151,16 +176,22 @@ function updateWeatherCard(weather) {
 // 定期航班資訊載入
 async function loadScheduleInfo(airportCode) {
     const scheduleData = document.getElementById('schedule-data');
-    scheduleData.innerHTML = '載入中...';
+    scheduleData.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
-        // TODO: 實作 TDX API 定期航班資訊請求
         const schedule = await fetchTDXData(`/api/schedule/${airportCode}`);
         if (schedule) {
             updateScheduleInfo(schedule);
         }
     } catch (error) {
-        scheduleData.innerHTML = '無法載入定期航班資訊';
+        console.error('載入定期航班資訊失敗:', error);
+        scheduleData.innerHTML = `
+            <div class="error-message">
+                <p>無法載入定期航班資訊</p>
+                <p class="error-details">${error.message}</p>
+                <button onclick="loadScheduleInfo('${airportCode}')" class="retry-btn">重試</button>
+            </div>
+        `;
     }
 }
 
@@ -172,7 +203,30 @@ function updateScheduleInfo(schedule) {
         return;
     }
 
-    // TODO: 實作定期航班資訊顯示邏輯
+    scheduleData.innerHTML = `
+        <table class="schedule-table">
+            <thead>
+                <tr>
+                    <th>航班號碼</th>
+                    <th>目的地</th>
+                    <th>起飛時間</th>
+                    <th>航空公司</th>
+                    <th>班表週期</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${schedule.map(flight => `
+                    <tr>
+                        <td>${flight.FlightNumber || '--'}</td>
+                        <td>${flight.ArrivalAirportID || '--'}</td>
+                        <td>${flight.DepartureTime || '--'}</td>
+                        <td>${flight.AirlineID || '--'}</td>
+                        <td>${flight.ServiceDay || '--'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 }
 
 // 航空公司資訊載入
@@ -181,13 +235,14 @@ async function loadAirlinesInfo(airportCode) {
     airlinesData.innerHTML = '載入中...';
 
     try {
-        // TODO: 實作 TDX API 航空公司資訊請求
-        const airlines = await fetchTDXData(`/api/airlines/${airportCode}`);
+        // 注意：航空公司 API 不需要 airportCode
+        const airlines = await fetchTDXData('/api/airlines');
         if (airlines) {
             updateAirlinesInfo(airlines);
         }
     } catch (error) {
-        airlinesData.innerHTML = '無法載入航空公司資訊';
+        console.error('載入航空公司資訊失敗:', error);
+        airlinesData.innerHTML = `<div class="error-message">無法載入航空公司資訊: ${error.message}</div>`;
     }
 }
 
@@ -199,5 +254,26 @@ function updateAirlinesInfo(airlines) {
         return;
     }
 
-    // TODO: 實作航空公司資訊顯示邏輯
+    airlinesData.innerHTML = `
+        <table class="airlines-table">
+            <thead>
+                <tr>
+                    <th>航空公司代碼</th>
+                    <th>航空公司名稱</th>
+                    <th>IATA 代碼</th>
+                    <th>ICAO 代碼</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${airlines.map(airline => `
+                    <tr>
+                        <td>${airline.AirlineID || '--'}</td>
+                        <td>${airline.AirlineName?.Zh_tw || '--'}</td>
+                        <td>${airline.AirlineIATA || '--'}</td>
+                        <td>${airline.AirlineICAO || '--'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+    `;
 }
