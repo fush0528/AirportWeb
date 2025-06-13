@@ -15,7 +15,6 @@ if (!process.env.TDX_CLIENT_ID || !process.env.TDX_CLIENT_SECRET) {
 }
 
 // TDX API 設定
-// TDX API 設定
 const TDX_AUTH_URL = 'https://tdx.transportdata.tw/auth/realms/TDXConnect/protocol/openid-connect/token';
 const TDX_API_URL = 'https://tdx.transportdata.tw/api/basic';
 // 請在此處填入您在 TDX 平台註冊的 CLIENT_ID 和 CLIENT_SECRET
@@ -49,7 +48,6 @@ function validateAirport(airport) {
     return true;
 }
 
-
 // 快取設定
 let tokenCache = {
     access_token: null,
@@ -59,6 +57,28 @@ let tokenCache = {
 // API 回應快取
 const apiCache = new Map();
 const CACHE_TTL = 30 * 1000; // 30 seconds in milliseconds
+
+// 清除快取
+function clearCache(endpoint) {
+    if (endpoint) {
+        apiCache.delete(endpoint);
+    } else {
+        apiCache.clear();
+    }
+}
+
+// 獲取所有快取狀態
+function getCacheStatus() {
+    const status = {};
+    apiCache.forEach((value, key) => {
+        status[key] = {
+            hasData: true,
+            timestamp: value.timestamp,
+            age: Date.now() - value.timestamp
+        };
+    });
+    return status;
+}
 
 // 速率限制設定
 const rateLimits = new Map();
@@ -96,7 +116,6 @@ function setCachedResponse(endpoint, data) {
 
 // 取得 TDX API Token
 async function getAccessToken() {
-    // 檢查快取是否有效
     if (tokenCache.access_token && tokenCache.expires_at > Date.now()) {
         return tokenCache.access_token;
     }
@@ -115,7 +134,6 @@ async function getAccessToken() {
             })
         });
 
-        // 更新快取
         tokenCache = {
             access_token: response.data.access_token,
             expires_at: Date.now() + (response.data.expires_in * 1000)
@@ -130,14 +148,12 @@ async function getAccessToken() {
 
 // API 請求輔助函數
 async function fetchTDXApi(endpoint) {
-    // 檢查快取
     const cachedResponse = getCachedResponse(endpoint);
     if (cachedResponse) {
         console.log(`使用快取資料: ${endpoint}`);
         return cachedResponse;
     }
 
-    // 檢查速率限制
     if (!checkRateLimit(endpoint)) {
         console.log(`達到速率限制，請等待約 ${RATE_LIMIT_WINDOW/1000} 秒後再試: ${endpoint}`);
         throw new Error('達到速率限制，請稍後再試');
@@ -152,40 +168,18 @@ async function fetchTDXApi(endpoint) {
             }
         });
         
-        // 驗證API回應格式
         if (!response.data) {
             throw new Error('API 回應格式錯誤: 無資料');
         }
 
-        // 依據不同API檢查回應格式
-        if (endpoint.includes('/FIDS/Airport/')) {
-            // 航班資訊API應該要有航班資料陣列
-            if (!Array.isArray(response.data)) {
-                throw new Error('航班資訊格式錯誤: 應為陣列格式');
-            }
-        } else if (endpoint.includes('/METAR/Airport/')) {
-            // 天氣資訊API應該要有METAR資料
-            if (!Array.isArray(response.data) || !response.data.length) {
-                throw new Error('天氣資訊格式錯誤: 無METAR資料');
-            }
-        } else if (endpoint.includes('/Schedule/Departure/Airport/')) {
-            // 定期航班API應該要有航班時刻表資料
-            if (!Array.isArray(response.data)) {
-                throw new Error('定期航班資訊格式錯誤: 應為陣列格式');
-            }
-        } else if (endpoint.includes('/Airline')) {
-            // 航空公司API應該要有航空公司資料陣列
-            if (!Array.isArray(response.data)) {
-                throw new Error('航空公司資訊格式錯誤: 應為陣列格式');
-            }
+        if (!Array.isArray(response.data)) {
+            throw new Error('API 回應格式錯誤: 應為陣列格式');
         }
         
-        // 儲存到快取
         setCachedResponse(endpoint, response.data);
         return response.data;
     } catch (error) {
         console.error('API 請求失敗:', error);
-        // 如果是 API 回應的錯誤，附加詳細資訊
         if (error.response?.data) {
             error.message = `${error.message} - API回應: ${JSON.stringify(error.response.data)}`;
         }
@@ -193,22 +187,53 @@ async function fetchTDXApi(endpoint) {
     }
 }
 
-// 航班資訊 API 路由
-app.get('/api/flights/:airport', async (req, res) => {
+// 航班資訊（入境） API 路由
+app.get('/api/flights/arrival/:airport', async (req, res) => {
     try {
         const { airport } = req.params;
         const { limit = 30, lang = 'zh-TW' } = req.query;
 
-        // 驗證機場代碼
         validateAirport(airport);
-
-        // 確認數量限制格式
         const limitNum = parseInt(limit);
         if (isNaN(limitNum) || limitNum < 1) {
-            throw new Error('無效的資料筆數限制，請指定大於0的數字');
+            throw new Error('無效的資料筆數限制');
         }
 
-        // 取得即時航班資料（依照新版 API 規格）
+        const flights = await fetchTDXApi(
+            `/v2/Air/FIDS/Airport/Arrival/${airport}?` + 
+            `$top=${limitNum}&` +
+            `$format=JSON&` +
+            `$orderby=ScheduleArrivalTime asc`
+        );
+
+        res.json({
+            status: 'success',
+            data: flights,
+            updatedAt: new Date().toISOString(),
+            params: { airport, limit: limitNum, lang }
+        });
+    } catch (error) {
+        console.error('入境航班資訊錯誤:', error);
+        res.status(error.response?.status || 500).json({
+            status: 'error',
+            error: '無法取得入境航班資訊',
+            details: error.message
+        });
+    }
+});
+
+// 航班資訊（出境） API 路由
+app.get('/api/flights/departure/:airport', async (req, res) => {
+    try {
+        const { airport } = req.params;
+        const { limit = 30, lang = 'zh-TW' } = req.query;
+
+        validateAirport(airport);
+        const limitNum = parseInt(limit);
+        if (isNaN(limitNum) || limitNum < 1) {
+            throw new Error('無效的資料筆數限制');
+        }
+
         const flights = await fetchTDXApi(
             `/v2/Air/FIDS/Airport/Departure/${airport}?` + 
             `$top=${limitNum}&` +
@@ -220,21 +245,82 @@ app.get('/api/flights/:airport', async (req, res) => {
             status: 'success',
             data: flights,
             updatedAt: new Date().toISOString(),
-            params: {
-                airport,
-                limit: limitNum,
-                lang
-            }
+            params: { airport, limit: limitNum, lang }
         });
     } catch (error) {
-        console.error('航班資訊錯誤:', error);
-        res.status(error.response?.status || 500).json({ 
+        console.error('出境航班資訊錯誤:', error);
+        res.status(error.response?.status || 500).json({
             status: 'error',
-            error: '無法取得航班資訊',
-            details: error.message,
-            response: error.response?.data
+            error: '無法取得出境航班資訊',
+            details: error.message
         });
     }
+});
+
+// 航班資訊（即時） API 路由
+app.get('/api/flights/realtime/:airport', async (req, res) => {
+    try {
+        const { airport } = req.params;
+        const { limit = 30, lang = 'zh-TW' } = req.query;
+
+        validateAirport(airport);
+        const limitNum = parseInt(limit);
+        if (isNaN(limitNum) || limitNum < 1) {
+            throw new Error('無效的資料筆數限制');
+        }
+
+        const [arrivals, departures] = await Promise.all([
+            fetchTDXApi(
+                `/v2/Air/FIDS/Airport/Arrival/${airport}?` + 
+                `$top=${limitNum}&` +
+                `$format=JSON&` +
+                `$orderby=ScheduleArrivalTime asc`
+            ),
+            fetchTDXApi(
+                `/v2/Air/FIDS/Airport/Departure/${airport}?` + 
+                `$top=${limitNum}&` +
+                `$format=JSON&` +
+                `$orderby=ScheduleDepartureTime asc`
+            )
+        ]);
+
+        res.json({
+            status: 'success',
+            data: {
+                arrivals,
+                departures
+            },
+            updatedAt: new Date().toISOString(),
+            params: { airport, limit: limitNum, lang }
+        });
+    } catch (error) {
+        console.error('即時航班資訊錯誤:', error);
+        res.status(error.response?.status || 500).json({
+            status: 'error',
+            error: '無法取得即時航班資訊',
+            details: error.message
+        });
+    }
+});
+
+// 快取狀態 API 路由
+app.get('/api/cache/status', (req, res) => {
+    res.json({
+        status: 'success',
+        data: getCacheStatus(),
+        updatedAt: new Date().toISOString()
+    });
+});
+
+// 清除快取 API 路由
+app.get('/api/cache/clear', (req, res) => {
+    const { endpoint } = req.query;
+    clearCache(endpoint);
+    res.json({
+        status: 'success',
+        message: endpoint ? `清除了 ${endpoint} 的快取` : '清除了所有快取',
+        updatedAt: new Date().toISOString()
+    });
 });
 
 // 天氣資訊 API 路由
@@ -243,15 +329,23 @@ app.get('/api/weather/:airport', async (req, res) => {
         const { airport } = req.params;
         const { lang = 'zh-TW' } = req.query;
 
-        // 驗證機場代碼
         validateAirport(airport);
 
-        // 取得即時天氣資訊（依照新版 API 規格）
         const weather = await fetchTDXApi(
             `/v2/Air/METAR/Airport/${airport}?` +
-            `$format=JSON&` +
-            `$filter=StationID eq '${airport}'`
+            `$format=JSON`
         );
+
+        console.log('METAR API 回應:', JSON.stringify(weather, null, 2));
+
+        if (weather && weather[0]) {
+            console.log('Temperature:', weather[0].Temperature);
+            console.log('WindDirection:', weather[0].WindDirection);
+            console.log('WindSpeed:', weather[0].WindSpeed);
+            console.log('DewPoint:', weather[0].DewPoint);
+            console.log('Visibility:', weather[0].Visibility);
+            console.log('Altimeter:', weather[0].Altimeter);
+        }
 
         res.json({
             status: 'success',
@@ -273,69 +367,15 @@ app.get('/api/weather/:airport', async (req, res) => {
     }
 });
 
-// 定期航班 API 路由
-app.get('/api/schedule/:airport', async (req, res) => {
-    try {
-        const { airport } = req.params;
-        const { 
-            lang = 'zh-TW',
-            startDate,
-            endDate 
-        } = req.query;
-
-        // 驗證機場代碼
-        validateAirport(airport);
-
-        // 構建日期過濾條件
-        let dateFilter = '';
-        if (startDate && endDate) {
-            // 驗證日期格式 (YYYY-MM-DD)
-            if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
-                throw new Error('無效的日期格式，請使用 YYYY-MM-DD 格式');
-            }
-            dateFilter = `&$filter=DepartureDate ge ${startDate} and DepartureDate le ${endDate}`;
-        }
-
-        // 取得定期航班資料（依照新版 API 規格）
-        const schedule = await fetchTDXApi(
-            `/v2/Air/Schedule/Departure/Airport/${airport}?` +
-            `$format=JSON` +
-            dateFilter +
-            `&$orderby=DepartureTime asc`
-        );
-
-        res.json({
-            status: 'success',
-            data: schedule,
-            updatedAt: new Date().toISOString(),
-            params: {
-                airport,
-                lang,
-                startDate,
-                endDate
-            }
-        });
-    } catch (error) {
-        console.error('定期航班資訊錯誤:', error);
-        res.status(error.response?.status || 500).json({
-            status: 'error',
-            error: '無法取得定期航班資訊',
-            details: error.message,
-            response: error.response?.data
-        });
-    }
-});
-
 // 航空公司資訊 API 路由
 app.get('/api/airlines', async (req, res) => {
     try {
         const { lang = 'zh-TW' } = req.query;
 
-        // 取得航空公司資訊（依照新版 API 規格）
         const airlines = await fetchTDXApi(
-            `/v2/Air/Airline?` +
-            `$format=JSON&` +
-            `$orderby=AirlineID`
+            `/v2/Air/Airline` +
+            `?$format=JSON` +
+            `&$select=AirlineID,AirlineName,AirlineIATA,AirlineICAO`
         );
 
         res.json({
