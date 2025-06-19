@@ -7,13 +7,15 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
+<div class="container">
         <header>
             <h1>台灣機場資訊系統</h1>
         </header>
 
-        <section class="airport-selection">
-            <h2>選擇機場</h2>
+        <div class="main-content">
+            <aside class="sidebar">
+                <section class="airport-selection">
+            <h2>機場選單</h2>
             <div class="airport-buttons">
                 <button class="airport-btn" data-iata="TPE">桃園國際機場 (TPE)</button>
                 <button class="airport-btn" data-iata="TSA">台北松山機場 (TSA)</button>
@@ -22,18 +24,21 @@
             </div>
         </section>
 
-        <section class="function-selection" style="display: none;">
+        <section class="function-selection">
             <h2>功能選單</h2>
             <div class="function-buttons">
                 <button class="function-btn" data-function="arrival">入境航班資訊</button>
                 <button class="function-btn" data-function="departure">出境航班資訊</button>
                 <button class="function-btn" data-function="realtime">即時航班動態</button>
+                <button class="function-btn" data-function="schedule">國際航空定期時刻表</button>
                 <button class="function-btn" data-function="weather">即時天氣資訊</button>
                 <button class="function-btn" data-function="airlines">航空公司查詢</button>
             </div>
-        </section>
+                </section>
+            </aside>
 
-        <section class="display-area">
+            <main class="content">
+                <section class="display-area">
             <div id="arrival-display" class="info-display" style="display: none;">
                 <h3>入境航班資訊</h3>
                 <div class="flight-table-container">
@@ -122,7 +127,30 @@
                 <h3>航空公司資訊</h3>
                 <div id="airlines-data"></div>
             </div>
-        </section>
+
+            <div id="schedule-display" class="info-display" style="display: none;">
+                <h3>國際航空定期時刻表</h3>
+                <div class="flight-table-container">
+                    <table class="flight-table">
+                        <thead>
+                            <tr>
+                                <th>航空公司</th>
+                                <th>航班編號</th>
+                                <th>起飛機場</th>
+                                <th>目的地機場</th>
+                                <th>班期</th>
+                                <th>起飛時間</th>
+                                <th>抵達時間</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-data">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                </section>
+            </main>
+        </div>
     </div>
     <script src="main.js"></script>
 </body>

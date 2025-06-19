@@ -17,18 +17,33 @@ body {
     padding: 20px;
 }
 
+.main-content {
+    display: flex;
+    gap: 20px;
+    min-height: calc(100vh - 150px);
+}
+
+.sidebar {
+    width: 240px;
+    flex-shrink: 0;
+}
+
+.content {
+    flex: 1;
+}
+
 /* 頁首樣式 */
 header {
     text-align: center;
     margin-bottom: 30px;
     padding: 20px;
-    background-color: #fff;
+    background: linear-gradient(135deg, #00bcd4, #3f51b5);
     border-radius: 10px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
-    color: #1a237e;
+    color: #ffffff;
     font-size: 2.5rem;
 }
 
@@ -46,23 +61,30 @@ h2 {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.sidebar .airport-selection, 
+.sidebar .function-selection {
+    margin-bottom: 15px;
+}
+
 .airport-buttons, .function-buttons {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
+    grid-template-columns: 1fr;
+    gap: 10px;
 }
 
 /* 按鈕樣式 */
 .airport-btn, .function-btn {
-    padding: 15px 20px;
+    padding: 12px 15px;
     font-size: 1.1rem;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
     background-color: #fff;
-    color: #1a237e;
+    color: #000000;
     border: 2px solid #1a237e;
+    width: 100%;
+    text-align: left;
 }
 
 .airport-btn:hover, .function-btn:hover {
@@ -238,6 +260,14 @@ h2 {
 
     h1 {
         font-size: 2rem;
+    }
+
+    .main-content {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
     }
 
     .airport-buttons, .function-buttons {

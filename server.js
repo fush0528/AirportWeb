@@ -367,6 +367,39 @@ app.get('/api/weather/:airport', async (req, res) => {
     }
 });
 
+// 國際航空定期時刻表 API 路由
+app.get('/api/flights/schedule/:airport', async (req, res) => {
+    try {
+        const { airport } = req.params;
+        const { lang = 'zh-TW' } = req.query;
+
+        validateAirport(airport);
+
+        const schedules = await fetchTDXApi(
+            `/v2/Air/Schedule/Airport/${airport}` +
+            `?$format=JSON` +
+            `&$select=AirlineID,FlightNumber,DepartureAirportID,ArrivalAirportID,ArrivalTime,DepartureTime,ServiceDay,WeekNumber,Aircraft,AirlineIATA` +
+            `&$filter=EffectiveDate gt ${new Date().toISOString().split('T')[0]}` +
+            `&$orderby=DepartureTime`
+        );
+
+        res.json({
+            status: 'success',
+            data: schedules,
+            updatedAt: new Date().toISOString(),
+            params: { airport, lang }
+        });
+    } catch (error) {
+        console.error('航班時刻表錯誤:', error);
+        res.status(error.response?.status || 500).json({
+            status: 'error',
+            error: '無法取得航班時刻表',
+            details: error.message,
+            response: error.response?.data
+        });
+    }
+});
+
 // 航空公司資訊 API 路由
 app.get('/api/airlines', async (req, res) => {
     try {

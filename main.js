@@ -41,6 +41,9 @@ functionButtons.forEach(button => {
             case 'airlines':
                 loadAirlinesInfo();
                 break;
+            case 'schedule':
+                loadFlightSchedule(currentAirport);
+                break;
         }
     });
 });
@@ -57,6 +60,51 @@ function showFunctionDisplay(functionType) {
     const displayArea = document.getElementById(`${functionType}-display`);
     if (displayArea) {
         displayArea.style.display = 'block';
+    }
+}
+
+// 載入國際航空定期時刻表
+async function loadFlightSchedule(airportCode) {
+    const scheduleData = document.getElementById('schedule-data');
+    scheduleData.innerHTML = '<tr><td colspan="7" class="loading">載入中...</td></tr>';
+
+    try {
+        const schedules = await fetchTDXData(`/api/flights/schedule/${airportCode}`);
+        if (!schedules || schedules.length === 0) {
+            scheduleData.innerHTML = '<tr><td colspan="7">目前沒有航班時刻表資訊</td></tr>';
+            return;
+        }
+
+        const weekDays = ['一', '二', '三', '四', '五', '六', '日'];
+
+        scheduleData.innerHTML = schedules.map(flight => {
+            // 轉換班期資訊
+            const serviceDays = flight.ServiceDay
+                .map((active, index) => active ? weekDays[index] : null)
+                .filter(day => day !== null)
+                .join('、');
+
+            return `
+            <tr>
+                <td>${flight.AirlineIATA || flight.AirlineID || ''}</td>
+                <td>${flight.FlightNumber || ''}</td>
+                <td>${flight.DepartureAirportID || ''}</td>
+                <td>${flight.ArrivalAirportID || ''}</td>
+                <td>${serviceDays || ''}</td>
+                <td>${flight.DepartureTime || ''}</td>
+                <td>${flight.ArrivalTime || ''}</td>
+            </tr>`;
+        }).join('');
+    } catch (error) {
+        console.error('載入航班時刻表失敗:', error);
+        scheduleData.innerHTML = `
+            <tr><td colspan="7" class="error">
+                <div class="error-message">
+                    <p>無法載入航班時刻表資訊</p>
+                    <p class="error-details">${error.message}</p>
+                    <button onclick="loadFlightSchedule('${airportCode}')" class="retry-btn">重試</button>
+                </div>
+            </td></tr>`;
     }
 }
 
