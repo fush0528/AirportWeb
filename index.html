@@ -32,6 +32,7 @@
                 <button class="function-btn" data-function="realtime">即時航班動態</button>
                 <button class="function-btn" data-function="weather">即時天氣資訊</button>
                 <button class="function-btn" data-function="airlines">航空公司查詢</button>
+                <button class="function-btn" data-function="livecam">即時影像</button>
             </div>
                 </section>
             </aside>
@@ -125,6 +126,13 @@
             <div id="airlines-display" class="info-display" style="display: none;">
                 <h3>航空公司資訊</h3>
                 <div id="airlines-data"></div>
+            </div>
+
+            <div id="livecam-display" class="info-display" style="display: none;">
+                <h3>機場即時影像</h3>
+                <div class="livecam-container">
+                    <iframe id="livecam-iframe" width="800" height="450" frameborder="0" allowfullscreen></iframe>
+                </div>
             </div>
 
                 </section>

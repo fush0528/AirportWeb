@@ -41,8 +41,8 @@ functionButtons.forEach(button => {
             case 'airlines':
                 loadAirlinesInfo();
                 break;
-            case 'schedule':
-                loadFlightSchedule(currentAirport);
+            case 'livecam':
+                loadLiveCam(currentAirport);
                 break;
         }
     });
@@ -335,5 +335,21 @@ async function loadAirlinesInfo() {
                 無法載入航空公司資訊: ${error.message}
                 <button onclick="loadAirlinesInfo()" class="retry-btn">重試</button>
             </div>`;
+    }
+}
+
+// 載入即時影像
+function loadLiveCam(airportCode) {
+    const livecamIframe = document.getElementById('livecam-iframe');
+    const urls = {
+        'TPE': 'https://www.youtube.com/embed/s5m1-WFXFaU?autoplay=1&mute=1',
+        'KHH': 'https://www.youtube.com/embed/x8XDuuB_rBA?autoplay=1&mute=1'
+    };
+
+    const videoUrl = urls[airportCode];
+    if (videoUrl) {
+        livecamIframe.src = videoUrl;
+    } else {
+        livecamIframe.parentElement.innerHTML = '<p class="error-message">此機場目前未提供即時影像服務</p>';
     }
 }
