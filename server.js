@@ -336,15 +336,26 @@ app.get('/api/weather/:airport', async (req, res) => {
             `$format=JSON`
         );
 
-        console.log('METAR API 回應:', JSON.stringify(weather, null, 2));
+        console.log('\n=== METAR API 回應 ===');
+        console.log('原始回應:', JSON.stringify(weather, null, 2));
 
         if (weather && weather[0]) {
-            console.log('Temperature:', weather[0].Temperature);
-            console.log('WindDirection:', weather[0].WindDirection);
-            console.log('WindSpeed:', weather[0].WindSpeed);
-            console.log('DewPoint:', weather[0].DewPoint);
-            console.log('Visibility:', weather[0].Visibility);
-            console.log('Altimeter:', weather[0].Altimeter);
+            const weatherData = weather[0];
+            const weatherProperties = {
+                溫度: weatherData.Temperature || '無溫度資料',
+                風向: weatherData.WindDirection || '無風向資料',
+                風速: weatherData.WindSpeed || '無風速資料',
+                能見度: weatherData.Visibility || '無能見度資料'
+            };
+
+            console.log('\n=== 天氣資料屬性 ===');
+            console.log('所有屬性名稱:', Object.keys(weatherData).join(', '));
+            console.log('\n=== 天氣資料值 ===');
+            Object.entries(weatherProperties).forEach(([key, value]) => {
+                console.log(`${key}:`, typeof value === 'object' ? JSON.stringify(value, null, 2) : value);
+            });
+        } else {
+            console.log('警告: 沒有收到有效的天氣資料');
         }
 
         res.json({

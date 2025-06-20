@@ -247,23 +247,35 @@ async function loadWeatherInfo(airportCode) {
     weatherData.innerHTML = '<div class="loading">載入中...</div>';
 
     try {
+        console.log('開始載入天氣資訊');
         const weather = await fetchTDXData(`/api/weather/${airportCode}`);
         if (!weather || weather.length === 0) {
             weatherData.innerHTML = '無法取得天氣資訊';
+            console.log('沒有收到天氣資料');
             return;
         }
 
+        console.log('收到天氣資料:', JSON.stringify(weather, null, 2));
+        console.log('第一筆天氣資料:', weather[0]);
+
         const latestWeather = weather[0];
+        console.log('天氣資料解構:', {
+            temperature: latestWeather.Temperature,
+            windDirection: latestWeather.WindDirection,
+            windSpeed: latestWeather.WindSpeed,
+            visibility: latestWeather.Visibility
+        });
+        
         weatherData.innerHTML = `
             <div class="weather-card">
                 <h4>${latestWeather.StationID || ''} 機場天氣資訊</h4>
                 <div class="weather-details">
                     <div class="weather-info">
                         <p><strong>觀測時間:</strong> ${formatDateTime(latestWeather.ObservationTime) || ''}</p>
-                        <p><strong>溫度:</strong> ${latestWeather.Temperature?.Value ? `${latestWeather.Temperature.Value}°C` : ''}</p>
-                        <p><strong>風向:</strong> ${latestWeather.WindDirection?.Value ? `${latestWeather.WindDirection.Value}°` : ''}</p>
-                        <p><strong>風速:</strong> ${latestWeather.WindSpeed?.Value ? `${latestWeather.WindSpeed.Value} 節` : ''}</p>
-                        <p><strong>能見度:</strong> ${latestWeather.Visibility?.Value ? `${latestWeather.Visibility.Value} 公尺` : ''}</p>
+                        <p><strong>溫度:</strong> ${latestWeather.Temperature || '無資料'}</p>
+                        <p><strong>風向:</strong> ${latestWeather.WindDirection || '無資料'}</p>
+                        <p><strong>風速:</strong> ${latestWeather.WindSpeed || '無資料'}</p>
+                        <p><strong>能見度:</strong> ${latestWeather.Visibility || '無資料'}</p>
                     </div>
                 </div>
                 <div class="update-time">
