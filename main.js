@@ -307,12 +307,13 @@ async function loadAirlinesInfo() {
             return;
         }
 
-        const filteredAirlines = airlines.filter(airline => 
-            airline.AirlineID || 
-            (airline.AirlineName && (typeof airline.AirlineName === 'object' ? airline.AirlineName.Zh_tw : airline.AirlineName)) ||
-            airline.AirlineIATA ||
-            airline.AirlineICAO
-        );
+        const filteredAirlines = airlines.filter(airline => {
+            // 檢查公司名稱是否存在且不為空
+            const airlineName = typeof airline.AirlineName === 'object'
+                ? airline.AirlineName.Zh_tw
+                : airline.AirlineName;
+            return airlineName && airlineName.trim() !== '';
+        });
 
         airlinesData.innerHTML = `
             <table class="airlines-table">
@@ -326,16 +327,21 @@ async function loadAirlinesInfo() {
                 </thead>
                 <tbody>
                     ${filteredAirlines.map(airline => {
-                        const airlineName = typeof airline.AirlineName === 'object' 
-                            ? airline.AirlineName.Zh_tw || ''
-                            : airline.AirlineName || '';
-                        return `
-                        <tr>
-                            <td>${airline.AirlineID || ''}</td>
-                            <td>${airlineName}</td>
-                            <td>${airline.AirlineIATA || ''}</td>
-                            <td>${airline.AirlineICAO || ''}</td>
-                        </tr>`;
+                        const airlineName = typeof airline.AirlineName === 'object'
+                            ? airline.AirlineName.Zh_tw
+                            : airline.AirlineName;
+                            
+                        // 只有當航空公司名稱存在且不為空時才顯示該筆資料
+                        if (airlineName && airlineName.trim() !== '') {
+                            return `
+                            <tr>
+                                <td>${airline.AirlineID || ''}</td>
+                                <td>${airlineName}</td>
+                                <td>${airline.AirlineIATA || ''}</td>
+                                <td>${airline.AirlineICAO || ''}</td>
+                            </tr>`;
+                        }
+                        return ''; // 如果沒有公司名稱，則不顯示該筆資料
                     }).join('')}
                 </tbody>
             </table>
